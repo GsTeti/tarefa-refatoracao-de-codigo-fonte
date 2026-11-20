@@ -1,9 +1,17 @@
 #include <string.h>
-#include "GildedRose.h"
 #include <stdio.h>
+#include <stdbool.h>
+#include "GildedRose.h"
 
-Item*
-init_item(Item* item, const char *name, int sellIn, int quality)
+#define QUALIDADE_MAXIMA 50
+#define QUALIDADE_MINIMA 0
+
+static const char *QUEIJO_BRIE = "Aged Brie";
+static const char *INGRESSO_SHOW = "Backstage passes to a TAFKAL80ETC concert";
+static const char *SULFURAS = "Sulfuras, Hand of Ragnaros";
+static const char *PREFIXO_CONJURADO = "Conjured";
+
+Item* init_item(Item* item, const char *name, int sellIn, int quality)
 {
     item->sellIn = sellIn;
     item->quality = quality;
@@ -12,87 +20,95 @@ init_item(Item* item, const char *name, int sellIn, int quality)
     return item;
 }
 
-extern char* 
-print_item(char* buffer, Item* item) 
+extern char* print_item(char* buffer, Item* item) 
 {
     sprintf(buffer, "%s, %d, %d", item->name, item->sellIn, item->quality);
+    return buffer;
 }
 
-void 
-update_quality(Item items[], int size) 
+static bool e_queijo_brie(const Item *item) {
+    return strcmp(item->name, QUEIJO_BRIE) == 0;
+}
+
+static bool e_ingresso_show(const Item *item) {
+    return strcmp(item->name, INGRESSO_SHOW) == 0;
+}
+
+static bool e_sulfuras(const Item *item) {
+    return strcmp(item->name, SULFURAS) == 0;
+}
+
+static bool e_item_conjurado(const Item *item) {
+    return strncmp(item->name, PREFIXO_CONJURADO, strlen(PREFIXO_CONJURADO)) == 0;
+}
+
+static void aumentar_qualidade(Item *item, int valor) {
+    item->quality += valor;
+    if (item->quality > QUALIDADE_MAXIMA) {
+        item->quality = QUALIDADE_MAXIMA;
+    }
+}
+
+static void diminuir_qualidade(Item *item, int valor) {
+    item->quality -= valor;
+    if (item->quality < QUALIDADE_MINIMA) {
+        item->quality = QUALIDADE_MINIMA;
+    }
+}
+
+static void atualizar_queijo_brie(Item *item) {
+    item->sellIn--;
+    int aumento = (item->sellIn < 0) ? 2 : 1;
+    aumentar_qualidade(item, aumento);
+}
+
+static void atualizar_ingresso_show(Item *item) {
+    if (item->sellIn <= 5) {
+        aumentar_qualidade(item, 3);
+    } else if (item->sellIn <= 10) {
+        aumentar_qualidade(item, 2);
+    } else {
+        aumentar_qualidade(item, 1);
+    }
+
+    item->sellIn--;
+
+    if (item->sellIn < 0) {
+        item->quality = QUALIDADE_MINIMA;
+    }
+}
+
+static void atualizar_item_conjurado(Item *item) {
+    item->sellIn--;
+    int perda = (item->sellIn < 0) ? 4 : 2;
+    diminuir_qualidade(item, perda);
+}
+
+static void atualizar_item_comum(Item *item) {
+    item->sellIn--;
+    int perda = (item->sellIn < 0) ? 2 : 1;
+    diminuir_qualidade(item, perda);
+}
+
+static void atualizar_um_item(Item *item) {
+    if (e_sulfuras(item)) {
+        return;
+    }
+
+    if (e_queijo_brie(item)) {
+        atualizar_queijo_brie(item);
+    } else if (e_ingresso_show(item)) {
+        atualizar_ingresso_show(item);
+    } else if (e_item_conjurado(item)) {
+        atualizar_item_conjurado(item);
+    } else {
+        atualizar_item_comum(item);
+    }
+}
+
+void update_quality(Item items[], int size) 
 {
-    int i;
-    
-    for (i = 0; i < size; i++)
-    {
-        if (strcmp(items[i].name, "Aged Brie") && strcmp(items[i].name, "Backstage passes to a TAFKAL80ETC concert"))
-        {
-            if (items[i].quality > 0)
-            {
-                if (strcmp(items[i].name, "Sulfuras, Hand of Ragnaros"))
-                {
-                    items[i].quality = items[i].quality - 1;
-                }
-            }
-        }
-        else
-        {
-            if (items[i].quality < 50)
-            {
-                items[i].quality = items[i].quality + 1;
-
-                if (!strcmp(items[i].name, "Backstage passes to a TAFKAL80ETC concert"))
-                {
-                    if (items[i].sellIn < 11)
-                    {
-                        if (items[i].quality < 50)
-                        {
-                            items[i].quality = items[i].quality + 1;
-                        }
-                    }
-
-                    if (items[i].sellIn < 6)
-                    {
-                        if (items[i].quality < 50)
-                        {
-                            items[i].quality = items[i].quality + 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (strcmp(items[i].name, "Sulfuras, Hand of Ragnaros"))
-        {
-            items[i].sellIn = items[i].sellIn - 1;
-        }
-
-        if (items[i].sellIn < 0)
-        {
-            if (strcmp(items[i].name, "Aged Brie"))
-            {
-                if (strcmp(items[i].name, "Backstage passes to a TAFKAL80ETC concert"))
-                {
-                    if (items[i].quality > 0)
-                    {
-                        if (strcmp(items[i].name, "Sulfuras, Hand of Ragnaros"))
-                        {
-                            items[i].quality = items[i].quality - 1;
-                        }
-                    }
-                }
-                else
-                {
-                    items[i].quality = items[i].quality - items[i].quality;
-                }
-            }
-            else
-            {
-                if (items[i].quality < 50)
-                {
-                    items[i].quality = items[i].quality + 1;
-                }
-            }
-        }
+    for (int i = 0; i < size; i++) {
+        atualizar_um_item(&items[i]);
     }
 }

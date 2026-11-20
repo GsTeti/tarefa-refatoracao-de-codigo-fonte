@@ -1,6 +1,6 @@
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
-#include <CppUTestExt/MockSupport.h>
+#include <stdlib.h>
 
 extern "C" {
 #include "GildedRose.h"
@@ -8,36 +8,117 @@ extern "C" {
 
 TEST_GROUP(TestGildedRoseGroup)
 {
-  void setup() {
-  }
-  void teardown() {
-  }
+    Item item;
+
+    void teardown() {
+        free(item.name);
+    }
 };
 
-TEST(TestGildedRoseGroup, FirstTest)
+TEST(TestGildedRoseGroup, ItemComumPerdeUmDeQualidadeAntesDeVencer)
 {
-    Item items[1];
-    init_item(items, "Foo", 0, 0);
-    update_quality(items, 1);
-    STRCMP_EQUAL("fixme", items[0].name);
+    init_item(&item, "+5 Dexterity Vest", 10, 20);
+    update_quality(&item, 1);
+    LONGS_EQUAL(9, item.sellIn);
+    LONGS_EQUAL(19, item.quality);
 }
 
-void example()
+TEST(TestGildedRoseGroup, ItemComumPerdeDoisDeQualidadeDepoisDeVencer)
 {
-    Item items[6];
-    int last = 0;
-    
-    init_item(items + last++, "+5 Dexterity Vest", 10, 20);
-    init_item(items + last++, "Aged Brie", 2, 0);
-    init_item(items + last++, "Elixir of the Mongoose", 5, 7);
-    init_item(items + last++, "Sulfuras, Hand of Ragnaros", 0, 80);
-    init_item(items + last++, "Backstage passes to a TAFKAL80ETC concert", 15, 20);
-    init_item(items + last++, "Conjured Mana Cake", 3, 6);
-    update_quality(items, last);
+    init_item(&item, "+5 Dexterity Vest", 0, 20);
+    update_quality(&item, 1);
+    LONGS_EQUAL(-1, item.sellIn);
+    LONGS_EQUAL(18, item.quality);
 }
 
-int
-main(int ac, char** av)
+TEST(TestGildedRoseGroup, QualidadeNuncaFicaNegativa)
 {
-  return CommandLineTestRunner::RunAllTests(ac, av);
+    init_item(&item, "Elixir of the Mongoose", 5, 0);
+    update_quality(&item, 1);
+    LONGS_EQUAL(4, item.sellIn);
+    LONGS_EQUAL(0, item.quality);
+}
+
+TEST(TestGildedRoseGroup, QueijoBrieAumentaQualidadeEmUm)
+{
+    init_item(&item, "Aged Brie", 2, 0);
+    update_quality(&item, 1);
+    LONGS_EQUAL(1, item.sellIn);
+    LONGS_EQUAL(1, item.quality);
+}
+
+TEST(TestGildedRoseGroup, QueijoBrieAumentaQualidadeEmDoisDepoisDeVencer)
+{
+    init_item(&item, "Aged Brie", 0, 10);
+    update_quality(&item, 1);
+    LONGS_EQUAL(-1, item.sellIn);
+    LONGS_EQUAL(12, item.quality);
+}
+
+TEST(TestGildedRoseGroup, QualidadeNuncaPassaDeCinquenta)
+{
+    init_item(&item, "Aged Brie", 2, 50);
+    update_quality(&item, 1);
+    LONGS_EQUAL(50, item.quality);
+}
+
+TEST(TestGildedRoseGroup, SulfurasNuncaMuda)
+{
+    init_item(&item, "Sulfuras, Hand of Ragnaros", 0, 80);
+    update_quality(&item, 1);
+    LONGS_EQUAL(0, item.sellIn);
+    LONGS_EQUAL(80, item.quality);
+}
+
+TEST(TestGildedRoseGroup, IngressoShowSobeUmQuandoFaltamMaisDeDezDias)
+{
+    init_item(&item, "Backstage passes to a TAFKAL80ETC concert", 15, 20);
+    update_quality(&item, 1);
+    LONGS_EQUAL(14, item.sellIn);
+    LONGS_EQUAL(21, item.quality);
+}
+
+TEST(TestGildedRoseGroup, IngressoShowSobeDoisQuandoFaltamDezDiasOuMenos)
+{
+    init_item(&item, "Backstage passes to a TAFKAL80ETC concert", 10, 20);
+    update_quality(&item, 1);
+    LONGS_EQUAL(9, item.sellIn);
+    LONGS_EQUAL(22, item.quality);
+}
+
+TEST(TestGildedRoseGroup, IngressoShowSobeTresQuandoFaltamCincoDiasOuMenos)
+{
+    init_item(&item, "Backstage passes to a TAFKAL80ETC concert", 5, 20);
+    update_quality(&item, 1);
+    LONGS_EQUAL(4, item.sellIn);
+    LONGS_EQUAL(23, item.quality);
+}
+
+TEST(TestGildedRoseGroup, IngressoShowZeraQualidadeDepoisDoShow)
+{
+    init_item(&item, "Backstage passes to a TAFKAL80ETC concert", 0, 20);
+    update_quality(&item, 1);
+    LONGS_EQUAL(-1, item.sellIn);
+    LONGS_EQUAL(0, item.quality);
+}
+
+TEST(TestGildedRoseGroup, ItemConjuradoPerdeDoisDeQualidadeAntesDeVencer)
+{
+    init_item(&item, "Conjured Mana Cake", 3, 6);
+    update_quality(&item, 1);
+    LONGS_EQUAL(2, item.sellIn);
+    LONGS_EQUAL(4, item.quality);
+}
+
+TEST(TestGildedRoseGroup, ItemConjuradoPerdeQuatroDeQualidadeDepoisDeVencer)
+{
+    init_item(&item, "Conjured Mana Cake", 0, 6);
+    update_quality(&item, 1);
+    LONGS_EQUAL(-1, item.sellIn);
+    LONGS_EQUAL(2, item.quality);
+}
+
+int main(int ac, char** av)
+{
+    return CommandLineTestRunner::RunAllTests(ac, av);
 }
